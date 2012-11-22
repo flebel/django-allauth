@@ -18,6 +18,7 @@ import signals
 
 User = get_user_model()
 
+
 def _process_signup(request, sociallogin):
     # If email is specified, check for duplicate and if so, no auto signup.
     auto_signup = app_settings.AUTO_SIGNUP
@@ -51,7 +52,7 @@ def _process_signup(request, sociallogin):
         # (create user, send email, in active etc..)
         u = sociallogin.account.user
         u.username = generate_unique_username(u.username
-                                              or email 
+                                              or email
                                               or 'user')
         u.last_name = (u.last_name or '') \
             [0:User._meta.get_field('last_name').max_length]
@@ -73,7 +74,7 @@ def _login_social_account(request, sociallogin):
             {},
             context_instance=RequestContext(request))
     else:
-        ret = perform_login(request, user, 
+        ret = perform_login(request, user,
                             redirect_url=sociallogin.get_redirect_url())
     return ret
 
@@ -88,7 +89,7 @@ def complete_social_login(request, sociallogin):
     assert not sociallogin.is_existing
     sociallogin.lookup()
     signals.pre_social_login.send(sender=SocialLogin,
-                                  request=request, 
+                                  request=request,
                                   sociallogin=sociallogin)
     if request.user.is_authenticated():
         if sociallogin.is_existing:
@@ -109,11 +110,14 @@ def complete_social_login(request, sociallogin):
             sociallogin.save()
             default_next = reverse('socialaccount_connections')
             next = sociallogin.get_redirect_url(fallback=default_next)
-            messages.add_message(request, messages.INFO, 
+            messages.add_message(request, messages.INFO,
                                  _('The social account has been connected'))
             return HttpResponseRedirect(next)
     else:
         if sociallogin.is_existing:
+            if app_settings.AVATAR_SUPPORT:
+                # Update avatars on login
+                _copy_avatar(request, sociallogin.account.user, sociallogin.account)
             # Login existing user
             ret = _login_social_account(request, sociallogin)
         else:
@@ -171,8 +175,8 @@ def _copy_avatar(request, user, account):
 def complete_social_signup(request, sociallogin):
     if app_settings.AVATAR_SUPPORT:
         _copy_avatar(request, sociallogin.account.user, sociallogin.account)
-    return complete_signup(request, 
-                           sociallogin.account.user, 
+    return complete_signup(request,
+                           sociallogin.account.user,
                            sociallogin.get_redirect_url())
 
 
