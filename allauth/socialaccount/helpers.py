@@ -163,7 +163,7 @@ def _copy_avatar(request, user, account):
     if url:
         # Look for existing Avatar before creating a new one
         # TODO: is it bad to always update the primary avatar?
-        ava = Avatar.objects.get_or_create(user=user, primary=True)
+        ava, _ = Avatar.objects.get_or_create(user=user, primary=True)
         try:
             content = urllib2.urlopen(url).read()
             name = _name_from_url(url)
