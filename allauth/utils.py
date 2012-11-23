@@ -10,7 +10,8 @@ from django.utils import importlib
 
 import app_settings
 
-def get_login_redirect_url(request, 
+
+def get_login_redirect_url(request,
                            fallback=app_settings.LOGIN_REDIRECT_URL):
     """
     Returns a url to redirect to after the login
@@ -23,7 +24,7 @@ def passthrough_login_redirect_url(request, url):
     assert url.find("?") < 0  # TODO: Handle this case properly
     next = get_login_redirect_url(request, fallback=None)
     if next:
-        url = url + '?' + urlencode({ REDIRECT_FIELD_NAME: next })
+        url = url + '?' + urlencode({REDIRECT_FIELD_NAME: next})
     return url
 
 
@@ -81,12 +82,12 @@ def email_address_exists(email, exclude_user=None):
     return ret
 
 
-
 def import_attribute(path):
     assert isinstance(path, str)
-    pkg, attr = path.rsplit('.',1)
+    pkg, attr = path.rsplit('.', 1)
     ret = getattr(importlib.import_module(pkg), attr)
     return ret
+
 
 def import_callable(path_or_callable):
     if not hasattr(path_or_callable, '__call__'):
@@ -107,5 +108,3 @@ def get_user_model():
     if user_model is None:
         raise ImproperlyConfigured("AUTH_USER_MODEL refers to model '%s' that has not been installed" % app_settings.USER_MODEL)
     return user_model
-
-    
