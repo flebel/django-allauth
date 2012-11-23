@@ -92,3 +92,4 @@ assert EMAIL_VERIFICATION != EmailVerificationMethod.MANDATORY or EMAIL_REQUIRED
 # Will set is_active to False for new users
 # is_active is only set to true if a valid invitation key is supplied
 INVITATION_REQUIRED = getattr(settings, 'ACCOUNT_INVITATION_REQUIRED', False)
+NO_INVITATION_REDIRECT = getattr(settings, 'ACCOUNT_NO_INVITATION_REDIRECT', False)

@@ -1,30 +1,20 @@
-from django.conf import settings
-from django.views.generic.simple import direct_to_template
-from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
-from django.contrib.auth.decorators import login_required
+from django.core.urlresolvers import reverse
 
-# from registration.views import register as registration_register
-# from registration.forms import RegistrationForm
-# from registration.backends import default as registration_backend
+import app_settings
+from allauth.invitations.models import InvitationKey
 
-from fiveby.apps.invitations.models import InvitationKey
-#from invitation.backends import InvitationBackend
 
-is_key_valid = InvitationKey.objects.is_key_valid
-remaining_invitations_for_user = InvitationKey.objects.remaining_invitations_for_user
+def invited(request, invitation_key=None, extra_context=None):
+    if app_settings.INVITATION_REQUIRED:
+        if invitation_key and InvitationKey.objects.is_key_valid(invitation_key):
+            # store the invitation key in the session
+            request.session['invitation_key'] = invitation_key
+            HttpResponseRedirect(reverse('account_signup'))
+    return HttpResponseRedirect(reverse('account_login'))
 
-# def invited(request, invitation_key=None, extra_context=None):
-#     if getattr(settings, 'INVITE_MODE', False):
-#         if invitation_key and is_key_valid(invitation_key):
-#             template_name = 'invitation/invited.html'
-#         else:
-#             template_name = 'invitation/wrong_invitation_key.html'
-#         extra_context = extra_context is not None and extra_context.copy() or {}
-#         extra_context.update({'invitation_key': invitation_key})
-#         return direct_to_template(request, template_name, extra_context)
-#     else:
-#         return HttpResponseRedirect(reverse('registration_register'))
+
+# remaining_invitations_for_user = InvitationKey.objects.remaining_invitations_for_user
 
 # def register(request, backend, success_url=None,
 #             form_class=RegistrationForm,

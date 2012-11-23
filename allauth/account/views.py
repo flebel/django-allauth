@@ -13,6 +13,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import redirect
 
 from allauth.utils import passthrough_login_redirect_url, get_user_model
+from allauth.invitations.models import InvitationKey
 
 from utils import get_default_redirect, complete_signup
 from forms import AddEmailForm, ChangePasswordForm
@@ -61,8 +62,13 @@ def login(request, **kwargs):
 
 def signup(request, **kwargs):
     if app_settings.INVITATION_REQUIRED:
-        # TODO: look for invitation key in session and validate it
-        return redirect('/')
+        import logging
+        l = logging.getLogger('fiveby')
+        l.error(request.session.keys())
+        # Check for valid invitation key in session
+        if 'invitation_key' not in request.session \
+            or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
+            return redirect(app_settings.NO_INVITATION_REDIRECT)
     form_class = kwargs.pop("form_class", SignupForm)
     template_name = kwargs.pop("template_name", "account/signup.html")
     redirect_field_name = kwargs.pop("redirect_field_name", "next")

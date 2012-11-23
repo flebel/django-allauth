@@ -11,6 +11,7 @@ from allauth.utils import (generate_unique_username, email_address_exists,
 from allauth.account.utils import send_email_confirmation, \
     perform_login, complete_signup
 from allauth.account import app_settings as account_settings
+from allauth.invitations.models import InvitationKey
 
 from models import SocialLogin
 import app_settings
@@ -122,9 +123,11 @@ def complete_social_login(request, sociallogin):
             ret = _login_social_account(request, sociallogin)
         else:
             # New social user
-            if app_settings.INVITATION_REQUIRED:
-                # TODO: check for valid invitation key in session
-                return None
+            if app_settings.account_settings.INVITATION_REQUIRED:
+                # Check for valid invitation key in session
+                if 'invitation_key' not in request.session \
+                    or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
+                    return HttpResponseRedirect(app_settings.account_settings.NO_INVITATION_REDIRECT)
             ret = _process_signup(request, sociallogin)
     return ret
 
