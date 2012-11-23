@@ -14,3 +14,5 @@ if SOCIALACCOUNT_ENABLED:
 LOGIN_REDIRECT_URL = getattr(settings, 'LOGIN_REDIRECT_URL', '/')
 
 USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
+
+INVITATION_REQUIRED = getattr(settings, 'ACCOUNT_INVITATION_REQUIRED', False)
