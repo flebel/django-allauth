@@ -18,6 +18,7 @@ from django.utils.translation import ugettext_lazy as _, ugettext
 from django.http import HttpResponseRedirect
 
 from allauth.utils import import_callable
+from allauth.invitations.models import InvitationKey
 
 import signals
 
@@ -109,6 +110,11 @@ def perform_login(request, user, redirect_url=None):
 
 
 def complete_signup(request, user, success_url):
+    if app_settings.INVITATION_REQUIRED:
+        # Mark the invitation as used
+        invitation_key = request.session['invitation_key']
+        key = InvitationKey.objects.get_key(invitation_key)
+        key.mark_used(user)
     signals.user_signed_up.send(sender=user.__class__,
                                 request=request,
                                 user=user)

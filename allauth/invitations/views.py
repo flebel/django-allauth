@@ -4,20 +4,13 @@ from django.core.urlresolvers import reverse
 import app_settings
 from allauth.invitations.models import InvitationKey
 
-import logging
-logger = logging.getLogger('fiveby')
-
 
 def accept(request, invitation_key, extra_context=None):
-    logger.error('accept')
     if app_settings.INVITATION_REQUIRED:
-        logger.error('got invitation key %s', invitation_key)
         if invitation_key and InvitationKey.objects.is_key_valid(invitation_key):
-            logger.error('key is valid')
             # store the invitation key in the session
             request.session['invitation_key'] = invitation_key
             return HttpResponseRedirect(reverse('account_signup'))
-        logger.error('invalid')
     return HttpResponseRedirect(reverse('account_login'))
 
 
