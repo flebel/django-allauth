@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import authenticate
 from django.contrib.sites.models import Site
 from django.utils import simplejson
+from django.utils.timezone import now
 
 import allauth.app_settings
 from allauth.utils import get_login_redirect_url
@@ -52,8 +53,8 @@ class SocialAccount(models.Model):
     # [2] http://openid.net/specs/openid-authentication-1_1.html#limits
 
     uid = models.CharField(max_length=255)
-    last_login = models.DateTimeField(auto_now=True)
-    date_joined = models.DateTimeField(auto_now_add=True)
+    last_login = models.DateTimeField(default=now)
+    date_joined = models.DateTimeField(default=now)
     extra_data = JSONField(default='{}')
 
     class Meta:
@@ -76,6 +77,10 @@ class SocialAccount(models.Model):
 
     def get_provider_account(self):
         return self.get_provider().wrap_account(self)
+
+    def save(self, *args, **kwargs):
+        self.last_login = now()
+        super(SocialAccount, self).save(*args, **kwargs)
 
 
 class SocialToken(models.Model):

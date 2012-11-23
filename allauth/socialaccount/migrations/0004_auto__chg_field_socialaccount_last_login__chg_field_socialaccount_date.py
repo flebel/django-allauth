@@ -8,62 +8,20 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'SocialApp'
-        db.create_table('socialaccount_socialapp', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('site', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sites.Site'])),
-            ('provider', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=40)),
-            ('key', self.gf('django.db.models.fields.CharField')(max_length=100)),
-            ('secret', self.gf('django.db.models.fields.CharField')(max_length=100)),
-        ))
-        db.send_create_signal('socialaccount', ['SocialApp'])
 
-        # Adding model 'SocialAccount'
-        db.create_table('socialaccount_socialaccount', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
-            ('provider', self.gf('django.db.models.fields.CharField')(max_length=30)),
-            ('uid', self.gf('django.db.models.fields.CharField')(max_length=255)),
-            ('last_login', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
-            ('date_joined', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
-            ('extra_data', self.gf('allauth.socialaccount.fields.JSONField')(default='{}')),
-        ))
-        db.send_create_signal('socialaccount', ['SocialAccount'])
+        # Changing field 'SocialAccount.last_login'
+        db.alter_column('socialaccount_socialaccount', 'last_login', self.gf('django.db.models.fields.DateTimeField')())
 
-        # Adding unique constraint on 'SocialAccount', fields ['provider', 'uid']
-        db.create_unique('socialaccount_socialaccount', ['provider', 'uid'])
-
-        # Adding model 'SocialToken'
-        db.create_table('socialaccount_socialtoken', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('app', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['socialaccount.SocialApp'])),
-            ('account', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['socialaccount.SocialAccount'])),
-            ('token', self.gf('django.db.models.fields.CharField')(max_length=200)),
-            ('token_secret', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),
-        ))
-        db.send_create_signal('socialaccount', ['SocialToken'])
-
-        # Adding unique constraint on 'SocialToken', fields ['app', 'account']
-        db.create_unique('socialaccount_socialtoken', ['app_id', 'account_id'])
-
+        # Changing field 'SocialAccount.date_joined'
+        db.alter_column('socialaccount_socialaccount', 'date_joined', self.gf('django.db.models.fields.DateTimeField')())
 
     def backwards(self, orm):
-        # Removing unique constraint on 'SocialToken', fields ['app', 'account']
-        db.delete_unique('socialaccount_socialtoken', ['app_id', 'account_id'])
 
-        # Removing unique constraint on 'SocialAccount', fields ['provider', 'uid']
-        db.delete_unique('socialaccount_socialaccount', ['provider', 'uid'])
+        # Changing field 'SocialAccount.last_login'
+        db.alter_column('socialaccount_socialaccount', 'last_login', self.gf('django.db.models.fields.DateTimeField')(auto_now=True))
 
-        # Deleting model 'SocialApp'
-        db.delete_table('socialaccount_socialapp')
-
-        # Deleting model 'SocialAccount'
-        db.delete_table('socialaccount_socialaccount')
-
-        # Deleting model 'SocialToken'
-        db.delete_table('socialaccount_socialtoken')
-
+        # Changing field 'SocialAccount.date_joined'
+        db.alter_column('socialaccount_socialaccount', 'date_joined', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True))
 
     models = {
         'auth.group': {
@@ -110,10 +68,10 @@ class Migration(SchemaMigration):
         },
         'socialaccount.socialaccount': {
             'Meta': {'unique_together': "(('provider', 'uid'),)", 'object_name': 'SocialAccount'},
-            'date_joined': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'extra_data': ('allauth.socialaccount.fields.JSONField', [], {'default': "'{}'"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_login': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'provider': ('django.db.models.fields.CharField', [], {'max_length': '30'}),
             'uid': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
