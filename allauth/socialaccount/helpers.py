@@ -122,6 +122,9 @@ def complete_social_login(request, sociallogin):
             ret = _login_social_account(request, sociallogin)
         else:
             # New social user
+            if app_settings.INVITATION_REQUIRED:
+                # TODO: check for valid invitation key in session
+                return None
             ret = _process_signup(request, sociallogin)
     return ret
 

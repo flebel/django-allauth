@@ -96,8 +96,8 @@ def perform_login(request, user, redirect_url=None):
     # to set up authentication backends in settings.py
     if not hasattr(user, 'backend'):
         user.backend = "django.contrib.auth.backends.ModelBackend"
-    signals.user_logged_in.send(sender=user.__class__, 
-                                request=request, 
+    signals.user_logged_in.send(sender=user.__class__,
+                                request=request,
                                 user=user)
     login(request, user)
     messages.add_message(request, messages.SUCCESS,
@@ -109,8 +109,8 @@ def perform_login(request, user, redirect_url=None):
 
 
 def complete_signup(request, user, success_url):
-    signals.user_signed_up.send(sender=user.__class__, 
-                                request=request, 
+    signals.user_signed_up.send(sender=user.__class__,
+                                request=request,
                                 user=user)
     return perform_login(request, user, redirect_url=success_url)
 

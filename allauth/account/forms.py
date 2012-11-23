@@ -235,30 +235,30 @@ class BaseSignupForm(_base_signup_form_class()):
 
 
 class SignupForm(BaseSignupForm):
-    
+
     password1 = SetPasswordField(label=_("Password"))
     password2 = PasswordField(label=_("Password (again)"))
     confirmation_key = forms.CharField(
-        max_length = 40,
-        required = False,
-        widget = forms.HiddenInput())
-    
+        max_length=40,
+        required=False,
+        widget=forms.HiddenInput())
+
     def __init__(self, *args, **kwargs):
         super(SignupForm, self).__init__(*args, **kwargs)
-        current_order =self.fields.keyOrder
-        preferred_order = self.fields.keyOrder = ["username", 
-                                                  "password1", 
+        current_order = self.fields.keyOrder
+        preferred_order = self.fields.keyOrder = ["username",
+                                                  "password1",
                                                   "password2",
                                                   "email"]
         if not app_settings.USERNAME_REQUIRED:
             preferred_order = self.fields.keyOrder = ["email",
-                                                      "password1", 
+                                                      "password1",
                                                       "password2"]
         # Make sure custom fields are put below main signup fields
-        self.fields.keyOrder = preferred_order + [ f for f in current_order if not f in preferred_order ]
+        self.fields.keyOrder = preferred_order + [f for f in current_order if not f in preferred_order]
         if not app_settings.SIGNUP_PASSWORD_VERIFICATION:
             del self.fields["password2"]
-    
+
     def clean(self):
         super(SignupForm, self).clean()
         if app_settings.SIGNUP_PASSWORD_VERIFICATION \
@@ -267,7 +267,7 @@ class SignupForm(BaseSignupForm):
             if self.cleaned_data["password1"] != self.cleaned_data["password2"]:
                 raise forms.ValidationError(_("You must type the same password each time."))
         return self.cleaned_data
-    
+
     def create_user(self, commit=True):
         user = super(SignupForm, self).create_user(commit=False)
         password = self.cleaned_data.get("password1")

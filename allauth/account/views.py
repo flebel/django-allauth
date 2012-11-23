@@ -60,7 +60,9 @@ def login(request, **kwargs):
 
 
 def signup(request, **kwargs):
-
+    if app_settings.INVITATION_REQUIRED:
+        # TODO: look for invitation key in session and validate it
+        return redirect('/')
     form_class = kwargs.pop("form_class", SignupForm)
     template_name = kwargs.pop("template_name", "account/signup.html")
     redirect_field_name = kwargs.pop("redirect_field_name", "next")
