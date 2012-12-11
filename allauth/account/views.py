@@ -61,7 +61,7 @@ def login(request, **kwargs):
 
 
 def signup(request, **kwargs):
-    if app_settings.INVITATION_REQUIRED:
+    if not request.user.is_authenticated() and app_settings.INVITATION_REQUIRED:
         # Check for valid invitation key in session
         if 'invitation_key' not in request.session \
             or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
