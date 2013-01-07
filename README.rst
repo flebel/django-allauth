@@ -180,6 +180,10 @@ Configuration
 
 Available settings:
 
+ACCOUNT_ADAPTER (="allauth.account.adapter.DefaultAccountAdapter")
+  Specifies the adapter class to use, allowing you to alter certain
+  default behaviour.
+
 ACCOUNT_AUTHENTICATION_METHOD (="username" | "email" | "username_email")
   Specifies the login method to use -- whether the user logs in by
   entering his username, e-mail address, or either one of both.
@@ -270,6 +274,16 @@ From 0.8.2
 - The `ACCOUNT_EMAIL_VERIFICATION` setting is no longer a boolean
   based setting. Use a string value of "none", "optional" or
   "mandatory" instead.
+
+- The template "account/password_reset_key_message.txt" has been moved
+  to "account/email/password_reset_key_message.txt". The subject of
+  the message has been moved into a template
+  ("account/email/password_reset_key_subject.txt").
+
+- The `site` foreign key from `SocialApp` to `Site` has been replaced
+  by a `ManyToManyField`. Many apps can be used across multiple
+  domains (Facebook cannot).
+
 
 From 0.8.1
 **********
@@ -565,7 +579,7 @@ Or, if you need to use in a `{% blocktrans %}`::
 
     {% load account %}
 
-    {% user_display user as user_display}
+    {% user_display user as user_display %}
     {% blocktrans %}{{ user_display }} has logged in...{% endblocktrans %}
 
 Then, override the `ACCOUNT_USER_DISPLAY` setting with your project
