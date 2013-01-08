@@ -198,7 +198,7 @@ class BaseSignupForm(_base_signup_form_class()):
             User.objects.get(username__iexact=value)
         except User.DoesNotExist:
             return value
-        raise forms.ValidationError(_("This username is already taken. Please "
+        raise forms.ValidationError(_("That username is already taken. Please "
                                       "choose another."))
     
     def clean_email(self):
@@ -206,7 +206,7 @@ class BaseSignupForm(_base_signup_form_class()):
         if app_settings.UNIQUE_EMAIL:
             if value and email_address_exists(value):
                 raise forms.ValidationError \
-                    (_("A user is already registered with this e-mail address."))
+                    (_("A user is already registered with that e-mail address."))
         return value
     
     def create_user(self, commit=True):
