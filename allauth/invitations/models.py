@@ -3,6 +3,7 @@ import datetime
 import re
 
 from django.db import models
+from django.core.urlresolvers import reverse
 from django.utils.hashcompat import sha_constructor
 from django.utils.translation import ugettext_lazy as _
 from django.utils.timezone import now
@@ -106,12 +107,16 @@ class InvitationKey(models.Model):
         self.registrant = registrant
         self.save()
 
-    def send_to(self, email):
+    def send_to(self, email, request=None, **kwargs):
         """
         Send an invitation email to ``email``.
         """
-        current_site = Site.objects.get_current()
-
+        current_site = kwargs["site"] if "site" in kwargs else Site.objects.get_current()
+        invitation_url = reverse("invitations_accept", args=[self.key])
+        if request:
+            invitation_url = request.build_absolute_uri(invitation_url)
+        else:
+            invitation_url = 'http://' + current_site.domain + invitation_url
         subject = render_to_string('invitations/invitation_email_subject.txt',
                                    {'site': current_site,
                                      'invitation_key': self})
@@ -119,9 +124,10 @@ class InvitationKey(models.Model):
         subject = ''.join(subject.splitlines())
 
         message = render_to_string('invitations/invitation_email.txt',
-                                   {'invitation_key': self,
-                                     'expiration_days': app_settings.INVITATION_DAYS,
-                                     'site': current_site})
+                                   {'invitation': self,
+                                    'invitation_url': invitation_url,
+                                    'expiration_days': app_settings.INVITATION_DAYS,
+                                    'site': current_site})
 
         send_mail(subject, message, app_settings.DEFAULT_FROM_EMAIL, [email])
 
