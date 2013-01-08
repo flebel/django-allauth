@@ -33,6 +33,16 @@ EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL \
 EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL \
     = getattr(settings, "ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL",
               settings.LOGIN_URL)
+
+# Determines whether email confirmation is automatic when the link is clicked
+AUTO_EMAIL_CONFIRMATION \
+    = getattr(settings, "ACCOUNT_AUTO_EMAIL_CONFIRMATION", False)
+
+# Determines whether anonymous users are logged-in automatically when clicking
+# email confirmation links
+# when clicking an email confirmation link. If not, user is presented with a form.
+LOGIN_ON_EMAIL_CONFIRMATION \
+    = getattr(settings, "ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION", False)
                                          
 # The user is required to hand over an e-mail address when signing up
 EMAIL_REQUIRED = getattr(settings, "ACCOUNT_EMAIL_REQUIRED", False)

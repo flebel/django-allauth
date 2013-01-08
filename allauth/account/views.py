@@ -19,7 +19,7 @@ from utils import get_default_redirect, complete_signup
 from forms import AddEmailForm, ChangePasswordForm
 from forms import LoginForm, ResetPasswordKeyForm
 from forms import ResetPasswordForm, SetPasswordForm, SignupForm
-from utils import sync_user_email_addresses
+from utils import sync_user_email_addresses, perform_login
 from models import EmailAddress, EmailConfirmation
 
 import app_settings
@@ -106,14 +106,35 @@ class ConfirmEmailView(TemplateResponseMixin, View):
     
     def get(self, *args, **kwargs):
         try:
-            self.object = self.get_object()
+            self.object = confirmation = self.get_object()
         except Http404:
             self.object = None
+        # If auto email confirmation is enabled, just confirm the email
+        if app_settings.AUTO_EMAIL_CONFIRMATION:
+            if confirmation is None:
+                raise Http404
+            redirect_url = self.get_redirect_url()
+            self.confirm(confirmation, redirect_url)
+            if app_settings.LOGIN_ON_EMAIL_CONFIRMATION and \
+                not self.request.user.is_authenticated():
+                # log the user in automatically & redirect
+                return perform_login(self.request,
+                        confirmation.email_address.user,
+                        redirect_url=app_settings.EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL)
+            return redirect(self.get_redirect_url())
         ctx = self.get_context_data()
         return self.render_to_response(ctx)
     
     def post(self, *args, **kwargs):
-        self.object = confirmation = self.get_object()
+        self.object = self.get_object()
+        redirect_url = self.get_redirect_url()
+        self.confirm(self.object, redirect_url)
+        if not redirect_url:
+            ctx = self.get_context_data()
+            return self.render_to_response(ctx)
+        return redirect(redirect_url)
+
+    def confirm(self, confirmation, redirect_url=None):
         confirmation.confirm()
         # Don't -- allauth doesn't touch is_active so that sys admin can
         # use it to block users et al
@@ -121,11 +142,7 @@ class ConfirmEmailView(TemplateResponseMixin, View):
         # user = confirmation.email_address.user
         # user.is_active = True
         # user.save()
-        redirect_url = self.get_redirect_url()
-        if not redirect_url:
-            ctx = self.get_context_data()
-            return self.render_to_response(ctx)
-        if self.messages.get("email_confirmed"):
+        if redirect_url and self.messages.get("email_confirmed"):
             messages.add_message(
                 self.request,
                 self.messages["email_confirmed"]["level"],
@@ -133,7 +150,6 @@ class ConfirmEmailView(TemplateResponseMixin, View):
                     "email": confirmation.email_address.email
                 }
             )
-        return redirect(redirect_url)
     
     def get_object(self, queryset=None):
         if queryset is None:
