@@ -3,11 +3,11 @@ from django.conf.urls.defaults import patterns, url
 import views
 
 urlpatterns = patterns("",
-    url(r"^email/$", views.email, name="account_email"),
+#    url(r"^email/$", views.email, name="account_email"),
     url(r"^signup/$", views.signup, name="account_signup"),
     url(r"^login/$", views.login, name="account_login"),
-    url(r"^password/change/$", views.password_change, name="account_change_password"),
-    url(r"^password/set/$", views.password_set, name="account_set_password"),
+#    url(r"^password/change/$", views.password_change, name="account_change_password"),
+#    url(r"^password/set/$", views.password_set, name="account_set_password"),
 #    url(r"^password_delete/$", views.password_delete, name="acct_passwd_delete"),
 #    url(r"^password_delete/done/$", "django.views.generic.simple.direct_to_template", {
 #        "template": "account/password_delete_done.html",
