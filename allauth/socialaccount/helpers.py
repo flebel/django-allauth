@@ -8,8 +8,9 @@ from django.template.defaultfilters import slugify
 
 from allauth.utils import (generate_unique_username, email_address_exists,
                            get_user_model)
+from allauth.account.models import EmailAddress
 from allauth.account.utils import send_email_confirmation, \
-    perform_login, complete_signup
+    perform_login, complete_signup, setup_user_email
 from allauth.account import app_settings as account_settings
 from allauth.invitations.models import InvitationKey
 
@@ -62,6 +63,9 @@ def _process_signup(request, sociallogin):
         u.email = email or ''
         u.set_unusable_password()
         sociallogin.save()
+        # Make sure the user has a primary email address
+        if EmailAddress.objects.filter(user=u).count() == 0:
+            setup_user_email(request, u)
         send_email_confirmation(request, u)
         ret = complete_social_signup(request, sociallogin)
     return ret
