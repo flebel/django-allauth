@@ -48,27 +48,32 @@ def _process_signup(request, sociallogin):
     if not auto_signup:
         request.session['socialaccount_sociallogin'] = sociallogin
         url = reverse('socialaccount_signup')
-        ret = HttpResponseRedirect(url)
-    else:
-        # FIXME: There is some duplication of logic inhere
-        # (create user, send email, in active etc..)
-        u = sociallogin.account.user
-        u.username = generate_unique_username(u.username
-                                              or email
-                                              or 'user')
-        u.last_name = (u.last_name or '') \
-            [0:User._meta.get_field('last_name').max_length]
-        u.first_name = (u.first_name or '') \
-            [0:User._meta.get_field('first_name').max_length]
-        u.email = email or ''
-        u.set_unusable_password()
-        sociallogin.save()
-        # Make sure the user has a primary email address
-        if EmailAddress.objects.filter(user=u).count() == 0:
-            setup_user_email(request, u)
-        send_email_confirmation(request, u)
-        ret = complete_social_signup(request, sociallogin)
-    return ret
+        return HttpResponseRedirect(url)
+
+    # If we're still on auto signup, stop if invitations are required
+    if app_settings.account_settings.INVITATION_REQUIRED:
+        # Check for valid invitation key in session
+        if 'invitation_key' not in request.session \
+            or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
+            return HttpResponseRedirect(app_settings.account_settings.NO_INVITATION_REDIRECT)
+
+    # Continue with auto signup
+    # FIXME: There is some duplication of logic in here
+    # (create user, send email, in active etc..)
+    u = sociallogin.account.user
+    u.username = generate_unique_username(u.username
+                                          or email
+                                          or 'user')
+    u.last_name = (u.last_name or '')[0:User._meta.get_field('last_name').max_length]
+    u.first_name = (u.first_name or '')[0:User._meta.get_field('first_name').max_length]
+    u.email = email or ''
+    u.set_unusable_password()
+    sociallogin.save()
+    # Make sure the user has a primary email address
+    if EmailAddress.objects.filter(user=u).count() == 0:
+        setup_user_email(request, u)
+    send_email_confirmation(request, u)
+    return complete_social_signup(request, sociallogin)
 
 
 def _login_social_account(request, sociallogin):
@@ -127,11 +132,6 @@ def complete_social_login(request, sociallogin):
             ret = _login_social_account(request, sociallogin)
         else:
             # New social user
-            if app_settings.account_settings.INVITATION_REQUIRED:
-                # Check for valid invitation key in session
-                if 'invitation_key' not in request.session \
-                    or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
-                    return HttpResponseRedirect(app_settings.account_settings.NO_INVITATION_REDIRECT)
             ret = _process_signup(request, sociallogin)
     return ret
 
