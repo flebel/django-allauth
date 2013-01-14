@@ -45,17 +45,18 @@ def _process_signup(request, sociallogin):
         elif account_settings.EMAIL_REQUIRED:
             # Nope, email is required and we don't have it yet...
             auto_signup = False
-    if not auto_signup:
-        request.session['socialaccount_sociallogin'] = sociallogin
-        url = reverse('socialaccount_signup')
-        return HttpResponseRedirect(url)
 
-    # If we're still on auto signup, stop if invitations are required
+    # Stop here if invitations are required
     if app_settings.account_settings.INVITATION_REQUIRED:
         # Check for valid invitation key in session
         if 'invitation_key' not in request.session \
             or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
             return HttpResponseRedirect(app_settings.account_settings.NO_INVITATION_REDIRECT)
+
+    if not auto_signup:
+        request.session['socialaccount_sociallogin'] = sociallogin
+        url = reverse('socialaccount_signup')
+        return HttpResponseRedirect(url)
 
     # Continue with auto signup
     # FIXME: There is some duplication of logic in here
