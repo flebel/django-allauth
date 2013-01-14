@@ -176,10 +176,10 @@ class BaseSignupForm(_base_signup_form_class()):
 
     def __init__(self, *args, **kwargs):
         super(BaseSignupForm, self).__init__(*args, **kwargs)
-        if (app_settings.EMAIL_REQUIRED 
-            or (app_settings.EMAIL_VERIFICATION 
-                == EmailVerificationMethod.MANDATORY) 
-            or (app_settings.AUTHENTICATION_METHOD 
+        if (app_settings.EMAIL_REQUIRED
+            or (app_settings.EMAIL_VERIFICATION
+                == EmailVerificationMethod.MANDATORY)
+            or (app_settings.AUTHENTICATION_METHOD
                 == AuthenticationMethod.EMAIL)):
             self.fields["email"].label = ugettext("E-mail")
             self.fields["email"].required = True

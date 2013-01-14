@@ -30,7 +30,7 @@ def signup(request, **kwargs):
     dictionary = dict(site=Site.objects.get_current(),
                       account=sociallogin.account,
                       form=form)
-    return render_to_response(template_name, dictionary, 
+    return render_to_response(template_name, dictionary,
                               RequestContext(request))
 
 

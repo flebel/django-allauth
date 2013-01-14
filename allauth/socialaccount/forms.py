@@ -3,19 +3,20 @@ from django import forms
 
 from allauth.account.models import EmailAddress
 from allauth.account.forms import BaseSignupForm
-from allauth.account.utils import send_email_confirmation
+from allauth.account.utils import send_email_confirmation, setup_user_email
 
 from models import SocialAccount
+
 
 class SignupForm(BaseSignupForm):
 
     def __init__(self, *args, **kwargs):
         self.sociallogin = kwargs.pop('sociallogin')
         user = self.sociallogin.account.user
-        initial = { 'email': user.email or '',
-                    'username': user.username or '',
-                    'first_name': user.first_name or '',
-                    'last_name': user.last_name or '' }
+        initial = {'email': user.email or '',
+                   'username': user.username or '',
+                   'first_name': user.first_name or '',
+                   'last_name': user.last_name or ''}
         kwargs['initial'] = initial
         super(SignupForm, self).__init__(*args, **kwargs)
 
@@ -23,7 +24,10 @@ class SignupForm(BaseSignupForm):
         new_user = self.create_user()
         self.sociallogin.account.user = new_user
         self.sociallogin.save()
-        super(SignupForm, self).save(new_user) 
+        super(SignupForm, self).save(new_user)
+        # Make sure the user has a primary email address
+        if EmailAddress.objects.filter(user=new_user).count() == 0:
+            setup_user_email(request, new_user)
         # Confirmation last (save may alter first_name etc -- used in mail)
         send_email_confirmation(request, new_user)
         return new_user
