@@ -3,7 +3,7 @@ from models import InvitationKey, InvitationUser
 
 
 class InvitationKeyAdmin(admin.ModelAdmin):
-    list_display = ('__unicode__', 'from_user', 'date_invited', 'registrant', 'key_expired')
+    list_display = ('__unicode__', 'key', 'from_user', 'date_invited', 'registrant', 'key_expired', 'reusable', 'use_count',)
 
 
 class InvitationUserAdmin(admin.ModelAdmin):

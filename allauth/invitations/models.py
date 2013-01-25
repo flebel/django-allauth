@@ -15,6 +15,7 @@ from django.contrib.sites.models import Site
 import app_settings
 
 SHA1_RE = re.compile('^[a-f0-9]{40}$')
+TEXT_RE = re.compile('^[a-z]{1,10}$')
 
 
 class InvitationKeyManager(models.Manager):
@@ -22,8 +23,8 @@ class InvitationKeyManager(models.Manager):
         """
         Return InvitationKey, or None if it doesn't (or shouldn't) exist.
         """
-        # Don't bother hitting database if invitation_key doesn't match pattern.
-        if not SHA1_RE.search(invitation_key):
+        # Don't bother hitting database if invitation_key doesn't match patterns.
+        if not SHA1_RE.search(invitation_key) and not TEXT_RE.search(invitation_key):
             return None
 
         try:
@@ -72,6 +73,8 @@ class InvitationKey(models.Model):
     from_user = models.ForeignKey(User, related_name='invitations_sent')
     registrant = models.ForeignKey(User, null=True, blank=True,
                                   related_name='invitations_used')
+    reusable = models.BooleanField(default=False)
+    use_count = models.IntegerField(default=0)
 
     objects = InvitationKeyManager()
 
@@ -82,6 +85,8 @@ class InvitationKey(models.Model):
         """
         Return whether this key is still valid for registering a new user.
         """
+        if self.reusable:
+            return True
         return self.registrant is None and not self.key_expired()
 
     def key_expired(self):
@@ -105,6 +110,7 @@ class InvitationKey(models.Model):
         Note that this key has been used to register a new user.
         """
         self.registrant = registrant
+        self.use_count += 1
         self.save()
 
     def send_to(self, email, request=None, **kwargs):
