@@ -137,7 +137,7 @@ def complete_social_login(request, sociallogin):
     return ret
 
 
-def _name_from_url(url):
+def _name_from_url(url, suffix=None):
     """
     >>> _name_from_url('http://google.com/dir/file.ext')
     u'file.ext'
@@ -166,7 +166,7 @@ def _name_from_url(url):
             return name
 
 
-def _copy_avatar(request, user, account):
+def _copy_avatar(request, user, account, name=None):
     import urllib2
     from django.core.files.base import ContentFile
     from avatar.models import Avatar
@@ -177,7 +177,14 @@ def _copy_avatar(request, user, account):
         ava, _ = Avatar.objects.get_or_create(user=user, primary=True)
         try:
             content = urllib2.urlopen(url).read()
-            name = _name_from_url(url)
+            url_name = _name_from_url(url)
+            if name is not None:
+                # manual name override
+                if '.' not in name and '.' in url_name:
+                    # add an ext if necessary
+                    name = '%s.%s' % (name, url.split('.')[-1])
+            else:
+                name = url_name
             ava.avatar.save(name, ContentFile(content))
         except IOError:
             # Let's nog make a big deal out of this...
