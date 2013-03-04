@@ -108,11 +108,11 @@ class ConfirmEmailView(TemplateResponseMixin, View):
         try:
             self.object = confirmation = self.get_object()
         except Http404:
-            self.object = None
+            self.object = confirmation = None
         # If auto email confirmation is enabled, just confirm the email
         if app_settings.AUTO_EMAIL_CONFIRMATION:
             if confirmation is None:
-                raise Http404
+                return redirect(self.get_redirect_url())
             redirect_url = self.get_redirect_url()
             self.confirm(confirmation, redirect_url)
             if app_settings.LOGIN_ON_EMAIL_CONFIRMATION and \
