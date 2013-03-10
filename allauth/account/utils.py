@@ -110,7 +110,7 @@ def perform_login(request, user, redirect_url=None):
 
 
 def complete_signup(request, user, success_url):
-    if app_settings.INVITATION_REQUIRED:
+    if 'invitation_key' in request.session:
         # Mark the invitation as used
         invitation_key = request.session['invitation_key']
         key = InvitationKey.objects.get_key(invitation_key)

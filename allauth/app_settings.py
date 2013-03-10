@@ -15,5 +15,6 @@ LOGIN_REDIRECT_URL = getattr(settings, 'LOGIN_REDIRECT_URL', '/')
 
 USER_MODEL = getattr(settings, 'AUTH_USER_MODEL', 'auth.User')
 
+INVITATIONS_ENABLED = getattr(settings, 'ACCOUNT_INVITATIONS_ENABLED', False)
 INVITATION_REQUIRED = getattr(settings, 'ACCOUNT_INVITATION_REQUIRED', False)
 NO_INVITATION_REDIRECT = getattr(settings, 'ACCOUNT_NO_INVITATION_REDIRECT', False)

@@ -11,7 +11,7 @@ if app_settings.SOCIALACCOUNT_ENABLED:
     urlpatterns += patterns('', url('^social/',
                                     include('allauth.socialaccount.urls')))
 
-if app_settings.INVITATION_REQUIRED:
+if app_settings.INVITATIONS_ENABLED:
     urlpatterns += patterns('', url('^invite/',
                                     include('allauth.invitations.urls')))
 
