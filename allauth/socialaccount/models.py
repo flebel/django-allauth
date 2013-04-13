@@ -21,7 +21,7 @@ class SocialAppManager(models.Manager):
 class SocialApp(models.Model):
     objects = SocialAppManager()
 
-    provider = models.CharField(max_length=30, 
+    provider = models.CharField(max_length=30,
                                 choices=providers.registry.as_choices())
     name = models.CharField(max_length=40)
     key = models.CharField(max_length=100,
@@ -35,6 +35,7 @@ class SocialApp(models.Model):
 
     def __unicode__(self):
         return self.name
+
 
 class SocialAccount(models.Model):
     user = models.ForeignKey(allauth.app_settings.USER_MODEL)
@@ -89,8 +90,11 @@ class SocialAccount(models.Model):
 class SocialToken(models.Model):
     app = models.ForeignKey(SocialApp)
     account = models.ForeignKey(SocialAccount)
-    token = models.CharField(max_length=200)
-    token_secret = models.CharField(max_length=200, blank=True)
+    token = models.TextField(
+        help_text='"oauth_token" (OAuth1) or access token (OAuth2)')
+    token_secret = models.CharField(max_length=200, blank=True,
+                                    help_text='"oauth_token_secret" (OAuth1) or refresh token (OAuth2)')
+    expires_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         unique_together = ('app', 'account')
@@ -167,6 +171,7 @@ class SocialLogin(object):
                                                 app=self.token.app)
                     t.token = self.token.token
                     t.token_secret = self.token.token_secret
+                    t.expires_at = self.token.expires_at
                     t.save()
                     self.token = t
                 except SocialToken.DoesNotExist:
@@ -174,12 +179,12 @@ class SocialLogin(object):
                     self.token.save()
         except SocialAccount.DoesNotExist:
             pass
-    
-    def get_redirect_url(self, 
+
+    def get_redirect_url(self,
                          fallback=allauth.app_settings.LOGIN_REDIRECT_URL):
         url = self.state.get('next') or fallback
         return url
-            
+
     @classmethod
     def state_from_request(cls, request):
         state = {}
@@ -192,7 +197,7 @@ class SocialLogin(object):
     def marshall_state(cls, request):
         state = cls.state_from_request(request)
         return simplejson.dumps(state)
-    
+
     @classmethod
     def unmarshall_state(cls, state_string):
         if state_string:
@@ -200,5 +205,3 @@ class SocialLogin(object):
         else:
             state = {}
         return state
-    
-            
