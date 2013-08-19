@@ -1,34 +1,30 @@
 from django.utils.cache import patch_response_headers
 from django.shortcuts import render
 
+import requests
+
 from allauth.socialaccount.models import SocialAccount, SocialLogin, SocialToken
 from allauth.socialaccount.helpers import complete_social_login
 from allauth.socialaccount.helpers import render_authentication_error
+from allauth.socialaccount.adapter import get_adapter
 from allauth.socialaccount import providers
 from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
                                                           OAuth2LoginView,
                                                           OAuth2CallbackView)
-from allauth.socialaccount import requests
 
-from forms import FacebookConnectForm
-from provider import FacebookProvider
-
-from allauth.utils import valid_email_or_none, get_user_model
-
-User = get_user_model()
+from .forms import FacebookConnectForm
+from .provider import FacebookProvider
 
 def fb_complete_login(app, token):
     resp = requests.get('https://graph.facebook.com/me',
                         params={ 'access_token': token.token })
-    extra_data = resp.json
-    email = valid_email_or_none(extra_data.get('email'))
+    extra_data = resp.json()
     uid = extra_data['id']
-    user = User(email=email)
-    # some facebook accounts don't have this data
-    for k in ['username', 'first_name', 'last_name']:
-        v = extra_data.get(k)
-        if v:
-            setattr(user, k, v)
+    user = get_adapter() \
+        .populate_new_user(email=extra_data.get('email'),
+                           username=extra_data.get('username'),
+                           first_name=extra_data.get('first_name'),
+                           last_name=extra_data.get('last_name'))
     account = SocialAccount(uid=uid,
                             provider=FacebookProvider.id,
                             extra_data=extra_data,
@@ -41,8 +37,9 @@ class FacebookOAuth2Adapter(OAuth2Adapter):
 
     authorize_url = 'https://www.facebook.com/dialog/oauth'
     access_token_url = 'https://graph.facebook.com/oauth/access_token'
+    expires_in_key = 'expires'
 
-    def complete_login(self, request, app, access_token):
+    def complete_login(self, request, app, access_token, **kwargs):
         return fb_complete_login(app, access_token)
 
 

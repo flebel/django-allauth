@@ -14,13 +14,12 @@ from allauth.socialaccount.app_settings import QUERY_EMAIL
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from allauth.socialaccount.helpers import render_authentication_error
 from allauth.socialaccount.helpers import complete_social_login
-from allauth.utils import valid_email_or_none, get_user_model
+from allauth.socialaccount.adapter import get_adapter
+from allauth.utils import valid_email_or_none
 
-from utils import DBOpenIDStore
-from forms import LoginForm
-from provider import OpenIDProvider
-
-User = get_user_model()
+from .utils import DBOpenIDStore
+from .forms import LoginForm
+from .provider import OpenIDProvider
 
 class AXAttribute:
     CONTACT_EMAIL = 'http://axschema.org/contact/email'
@@ -52,13 +51,13 @@ def login(request):
                                     required=True))
                     auth_request.addExtension(ax)
                 callback_url = reverse(callback)
-                state = SocialLogin.marshall_state(request)
-                callback_url = callback_url + '?' + urlencode(dict(state=state))
+                SocialLogin.stash_state(request)
                 redirect_url = auth_request.redirectURL(
                     request.build_absolute_uri('/'),
                     request.build_absolute_uri(callback_url))
                 return HttpResponseRedirect(redirect_url)
-            except DiscoveryFailure, e:
+            # UnicodeDecodeError: see https://github.com/necaris/python3-openid/issues/1
+            except (UnicodeDecodeError, DiscoveryFailure) as e:
                 if request.method == 'POST':
                     form._errors["openid"] = form.error_class([e])
                 else:
@@ -94,13 +93,14 @@ def callback(request):
         dict(request.REQUEST.items()),
         request.build_absolute_uri(request.path))
     if response.status == consumer.SUCCESS:
-        user = User(email=_get_email_from_response(response))
+        user = get_adapter() \
+            .populate_new_user(email=_get_email_from_response(response))
         account = SocialAccount(uid=response.identity_url,
                                 provider=OpenIDProvider.id,
                                 user=user,
                                 extra_data={})
         login = SocialLogin(account)
-        login.state = SocialLogin.unmarshall_state(request.REQUEST.get('state'))
+        login.state = SocialLogin.unstash_state(request)
         ret = complete_social_login(request, login)
     elif response.status == consumer.CANCEL:
         ret = HttpResponseRedirect(reverse('socialaccount_login_cancelled'))

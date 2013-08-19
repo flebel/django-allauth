@@ -1,3 +1,232 @@
+2013-07-23  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* All views are now class-based.
+
+	* The password reset from key success response now redirects to a
+	"done" view (`/accounts/password/reset/key/done/`). This view has
+	its own `account/password_reset_from_key_done.html` template. In
+	previous versions, the success template was intertwined with the
+	`account/password_reset_from_key.html` template.
+
+2013-07-19  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* `django.contrib.messages` is now optional.
+
+2013-07-01  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Version 0.12.0 released.
+
+2013-06-29  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Added support for re-authenticated (forced prompt) by means of a
+	new `action="reauthenticate"` parameter to the `{%
+	provider_login_url %}`
+
+2013-06-28  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Roberto Novaes contributed a Brazilian Portuguese translation,
+	thanks!
+
+2013-06-18  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Daniel Eriksson contributed a Swedish translation, thanks!
+
+2013-06-11  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* You can now logout from both allauth and Facebook via a
+	Javascript helper: `window.allauth.facebook.logout()`.
+
+2013-06-10  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Connecting a social account is now a flow that needs to be
+	explicitly triggered, by means of a `process="connect"` parameter
+	that can be passed along to the `{% provider_login_url %}`, or a
+	`process=connect` GET parameter.
+
+2013-06-06  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Tomas Marcik contributed a Czech translation, thanks!
+
+2013-06-04  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Version 0.11.1 released (due to issue in disconnecting social
+	accounts).
+
+2013-06-02  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Version 0.11.0 released.
+
+2013-05-30  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Moved logic whether or not a social account can be disconnected
+	to the `SocialAccountAdapter` (`validate_disconnect`).
+
+	* Added `social_account_removed` signal.
+
+2013-05-29  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Implemented CSRF protection
+	(http://tools.ietf.org/html/draft-ietf-oauth-v2-30#section-10.12).
+
+	* The `user_logged_in` signal now optionally receives a
+	`sociallogin` parameter, in case of a social login.
+
+	* Added `social_account_added` (contributed by orblivion, thanks).
+
+	* Hatem Nassrat contributed Bitly support, thanks!
+
+2013-05-22  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Bojan Mihelac contributed a Croatian translation, thanks!
+
+2013-05-20  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Messages (as in `django.contrib.messages`) are now configurable
+	through templates.
+
+2013-04-25  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Added support for differentiating e-mail handling (verification,
+	required) between local and social accounts:
+	`SOCIALACCOUNT_EMAIL_REQUIRED` and
+	`SOCIALACCOUNT_EMAIL_VERIFICATION`.
+
+2013-04-16  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Version 0.10.1 released.
+
+	* Cleaning of `username` can now be overriden via
+	`DefaultAccountAdapter.clean_username`
+
+2013-04-16  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Fixed potential error (`assert`) when connecting social
+	accounts.
+
+2013-04-13  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Added support for custom username handling in case of custom
+	user models (`ACCOUNT_USER_MODEL_USERNAME_FIELD`).
+
+2013-04-12  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Version 0.10.0 released.
+
+2013-04-08  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Chris Davis contributed Vimeo support, thanks!
+
+2013-04-03  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Added support for overriding the URL to return to after
+	connecting a social account
+	(`allauth.socialaccount.adapter.DefaultSocialAccountAdapter.get_connect_redirect_url`).
+
+2013-03-31  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Python 3 is now supported!
+
+2013-03-28  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Dropped dependency on (unmaintained?) oauth2 package, in favor
+	of requests-oauthlib.
+
+2013-03-13  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* account: E-mail confirmation mails generated at signup can now
+	be differentiated from regular e-mail confirmation mails by
+	placing e.g. a welcome message into the
+	`account/email/email_confirmation_signup*` templates. Thanks to
+	Sam Solomon for the patch.
+
+	* account: Moved User instance creation to adapter so that e.g.
+	username generation can be influenced. Thanks to John Bazik for
+	the patch.
+
+2013-03-08  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Robert Balfre contributed Dropbox support, thanks!
+
+2013-02-19  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* socialaccount: Added support for Weibo.
+
+2013-02-15  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* account: Added support for sending HTML e-mail. Add
+	"*_message.html" templates and they will be automatically picked
+	up.
+
+2013-02-13  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* socialaccount: The refresh token and token expiry time, if any,
+	are now stored in `SocialToken`.
+
+	* Added support for passing along extra parameters to the OAuth2
+	authentication calls, such as `access_type` (Google) or
+	`auth_type` (Facebook).
+
+2013-02-12  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Both the login and signup view now immediately redirect to the
+	login redirect url in case the user was already authenticated.
+
+2013-02-11  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Added support for closing down signups in a pluggable fashion,
+	making it easy to hookup your own invitation handling mechanism.
+
+2013-02-09  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Added support for passing along extra parameters to the
+	`FB.login` API call.
+
+2013-01-30  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Version 0.9.0 released.
+
+2013-01-29  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* account: `user_signed_up` signal now emits an optional
+	`sociallogin` parameter so that receivers can easily differentiate
+	between local and social signups.
+
+2013-01-24  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* account: Added `email_removed` signal.
+
+	* socialaccount: Populating of User model fields is now
+	centralized in the adapter, splitting up `name` into `first_name`
+	and `last_name` if these were not individually available.
+
+2013-01-11  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Ahmet Emre Aladağ contributed a Turkish translation, thanks!
+
+	* socialaccount: Added SocialAccountAdapter hook to allow for
+	intervention in social logins.
+
+2013-01-07  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* google: support for Google's `verified_email` flag to determine
+	whether or not to send confirmation e-mails.
+
+2012-12-26  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* Fábio Santos contributed a Portugese translation, thanks!
+
+2012-12-22  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* socialaccount: Added support for Stack Exchange.
+
+2012-12-14  Raymond Penners  <raymond.penners@intenct.nl>
+
+	* socialaccount: Added `get_social_accounts` template tag.
+
+	* account: Default URL to redirect to after login can now be
+	overriden via the adapter, both for login and e-mail confirmation
+	redirects.
+
 2012-12-06  Raymond Penners  <raymond.penners@intenct.nl>
 
 	* Version 0.8.3 released.
