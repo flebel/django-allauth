@@ -14,11 +14,6 @@ class Migration(SchemaMigration):
 
         # Changing field 'SocialAccount.date_joined'
         db.alter_column('socialaccount_socialaccount', 'date_joined', self.gf('django.db.models.fields.DateTimeField')())
-        # Adding field 'SocialToken.expires_at'
-        db.add_column('socialaccount_socialtoken', 'expires_at',
-                      self.gf('django.db.models.fields.DateTimeField')(null=True, blank=True),
-                      keep_default=False)
-
 
         # Changing field 'SocialToken.token'
         db.alter_column('socialaccount_socialtoken', 'token', self.gf('django.db.models.fields.TextField')())
@@ -30,9 +25,6 @@ class Migration(SchemaMigration):
 
         # Changing field 'SocialAccount.date_joined'
         db.alter_column('socialaccount_socialaccount', 'date_joined', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True))
-        # Deleting field 'SocialToken.expires_at'
-        db.delete_column('socialaccount_socialtoken', 'expires_at')
-
 
         # Changing field 'SocialToken.token'
         db.alter_column('socialaccount_socialtoken', 'token', self.gf('django.db.models.fields.CharField')(max_length=200))
