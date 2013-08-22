@@ -12,14 +12,12 @@ from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import redirect
 
 from ..exceptions import ImmediateHttpResponse
-from ..utils import passthrough_login_redirect_url, get_user_model
-from ..invitations.models import InvitationKey
+from ..utils import get_user_model
 
 from .forms import AddEmailForm, ChangePasswordForm
 from .forms import LoginForm, ResetPasswordKeyForm
 from .forms import ResetPasswordForm, SetPasswordForm, SignupForm
 from .utils import (get_next_redirect_url, complete_signup,
-                    get_default_redirect,
                     get_login_redirect_url,
                     passthrough_next_redirect_url,
                     perform_login,
@@ -32,67 +30,6 @@ from . import app_settings
 from .adapter import get_adapter
 
 User = get_user_model()
-
-def login(request, **kwargs):
-    form_class = kwargs.pop("form_class", LoginForm)
-    template_name = kwargs.pop("template_name", "account/login.html")
-    success_url = kwargs.pop("success_url", None)
-    url_required = kwargs.pop("url_required", False)
-    extra_context = kwargs.pop("extra_context", {})
-    redirect_field_name = kwargs.pop("redirect_field_name", "next")
-
-    if extra_context is None:
-        extra_context = {}
-    if success_url is None:
-        success_url = get_default_redirect(request, redirect_field_name)
-
-    if request.method == "POST" and not url_required:
-        form = form_class(request.POST)
-        if form.is_valid():
-            return form.login(request, redirect_url=success_url)
-    else:
-        form = form_class()
-
-    ctx = {
-        "form": form,
-        "signup_url": passthrough_login_redirect_url(request,
-                                                     reverse("account_signup")),
-        "site": Site.objects.get_current(),
-        "url_required": url_required,
-        "redirect_field_name": redirect_field_name,
-        "redirect_field_value": request.REQUEST.get(redirect_field_name),
-    }
-    ctx.update(extra_context)
-    return render_to_response(template_name, RequestContext(request, ctx))
-
-
-def signup(request, **kwargs):
-    if not request.user.is_authenticated() and app_settings.INVITATION_REQUIRED:
-        # Check for valid invitation key in session
-        if 'invitation_key' not in request.session \
-            or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
-            return redirect(app_settings.NO_INVITATION_REDIRECT)
-    form_class = kwargs.pop("form_class", SignupForm)
-    template_name = kwargs.pop("template_name", "account/signup.html")
-    redirect_field_name = kwargs.pop("redirect_field_name", "next")
-    success_url = kwargs.pop("success_url", None)
-
-    if success_url is None:
-        success_url = get_default_redirect(request, redirect_field_name)
-
-    if request.method == "POST":
-        form = form_class(request.POST)
-        if form.is_valid():
-            user = form.save(request)
-            return complete_signup(request, user, success_url)
-    else:
-        form = form_class()
-    ctx = {"form": form,
-           "login_url": passthrough_login_redirect_url(request,
-                                                       reverse("account_login")),
-           "redirect_field_name": redirect_field_name,
-           "redirect_field_value": request.REQUEST.get(redirect_field_name) }
-    return render_to_response(template_name, RequestContext(request, ctx))
 
 
 class RedirectAuthenticatedUserMixin(object):
