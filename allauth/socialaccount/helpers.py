@@ -12,7 +12,6 @@ from allauth.account import app_settings as account_settings
 from allauth.account.adapter import get_adapter as get_account_adapter
 from allauth.account.models import EmailAddress
 from allauth.account.utils import (perform_login, complete_signup,
-                                   send_email_confirmation,
                                    setup_user_email, user_field,
                                    user_email, user_username)
 from allauth.exceptions import ImmediateHttpResponse
