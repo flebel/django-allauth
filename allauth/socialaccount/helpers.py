@@ -6,6 +6,7 @@ from django.template import RequestContext
 from django.core.urlresolvers import reverse
 from django.template.defaultfilters import slugify
 
+from allauth import app_settings as auth_settings
 from allauth.utils import (generate_unique_username, email_address_exists,
                            get_user_model)
 from allauth.account import app_settings as account_settings
@@ -51,11 +52,11 @@ def _process_signup(request, sociallogin):
             auto_signup = False
 
     # Stop here if invitations are required
-    if app_settings.account_settings.INVITATION_REQUIRED:
+    if auth_settings.INVITATION_REQUIRED:
         # Check for valid invitation key in session
         if 'invitation_key' not in request.session \
             or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
-            return HttpResponseRedirect(app_settings.account_settings.NO_INVITATION_REDIRECT)
+            return HttpResponseRedirect(auth_settings.NO_INVITATION_REDIRECT)
 
     if not auto_signup:
         request.session['socialaccount_sociallogin'] = sociallogin
@@ -63,11 +64,11 @@ def _process_signup(request, sociallogin):
         ret = HttpResponseRedirect(url)
     else :
         # If we're still on auto signup, stop if invitations are required
-        if app_settings.account_settings.INVITATION_REQUIRED:
+        if auth_settings.INVITATION_REQUIRED:
             # Check for valid invitation key in session
             if 'invitation_key' not in request.session \
                 or not InvitationKey.objects.is_key_valid(request.session['invitation_key']):
-                return HttpResponseRedirect(app_settings.account_settings.NO_INVITATION_REDIRECT)
+                return HttpResponseRedirect(auth_settings.NO_INVITATION_REDIRECT)
         # Continue with auto signup
         # FIXME: This part contains a lot of duplication of logic
         # ("closed" rendering, create user, send email, in active
