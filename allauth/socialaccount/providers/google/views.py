@@ -1,14 +1,15 @@
+import requests
+
+from allauth.account.models import EmailAddress
 from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
                                                           OAuth2LoginView,
                                                           OAuth2CallbackView)
 
-from allauth.socialaccount import requests
 from allauth.socialaccount.models import SocialLogin, SocialAccount
-from allauth.utils import get_user_model
+from allauth.socialaccount.adapter import get_adapter
+from allauth.account.utils import user_email
 
-from provider import GoogleProvider
-
-User = get_user_model()
+from .provider import GoogleProvider
 
 class GoogleOAuth2Adapter(OAuth2Adapter):
     provider_id = GoogleProvider.id
@@ -16,11 +17,11 @@ class GoogleOAuth2Adapter(OAuth2Adapter):
     authorize_url = 'https://accounts.google.com/o/oauth2/auth'
     profile_url = 'https://www.googleapis.com/oauth2/v1/userinfo'
 
-    def complete_login(self, request, app, token):
+    def complete_login(self, request, app, token, **kwargs):
         resp = requests.get(self.profile_url,
-                            { 'access_token': token.token,
-                              'alt': 'json' })
-        extra_data = resp.json
+                            params={ 'access_token': token.token,
+                                     'alt': 'json' })
+        extra_data = resp.json()
         # extra_data is something of the form:
         # 
         # {u'family_name': u'Penners', u'name': u'Raymond Penners', 
@@ -33,14 +34,22 @@ class GoogleOAuth2Adapter(OAuth2Adapter):
         #
         # TODO: We could use verified_email to bypass allauth email verification
         uid = str(extra_data['id'])
-        user = User(email=extra_data.get('email', ''),
-                    last_name=extra_data.get('family_name', ''),
-                    first_name=extra_data.get('given_name', ''))
+        user = get_adapter() \
+            .populate_new_user(email=extra_data.get('email'),
+                               last_name=extra_data.get('family_name'),
+                               first_name=extra_data.get('given_name'))
+        email_addresses = []
+        email = user_email(user)
+        if email and extra_data.get('verified_email'):
+            email_addresses.append(EmailAddress(email=email,
+                                                verified=True,
+                                                primary=True))
         account = SocialAccount(extra_data=extra_data,
                                 uid=uid,
                                 provider=self.provider_id,
                                 user=user)
-        return SocialLogin(account)
+        return SocialLogin(account,
+                           email_addresses=email_addresses)
 
 oauth2_login = OAuth2LoginView.adapter_view(GoogleOAuth2Adapter)
 oauth2_callback = OAuth2CallbackView.adapter_view(GoogleOAuth2Adapter)

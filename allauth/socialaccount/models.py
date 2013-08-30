@@ -1,14 +1,22 @@
+from __future__ import absolute_import
+
+from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.contrib.auth import authenticate
 from django.contrib.sites.models import Site
-from django.utils import simplejson
 from django.utils.timezone import now
+from django.utils.encoding import python_2_unicode_compatible
+from django.utils.crypto import get_random_string
+try:
+    from django.utils.encoding import force_text
+except ImportError:
+    from django.utils.encoding import force_unicode as force_text
 
 import allauth.app_settings
-from allauth.utils import get_login_redirect_url
+from allauth.account.utils import get_next_redirect_url, setup_user_email
 
-import providers
-from fields import JSONField
+from . import providers
+from .fields import JSONField
 
 
 class SocialAppManager(models.Manager):
@@ -18,22 +26,28 @@ class SocialAppManager(models.Manager):
                         provider=provider)
 
 
+@python_2_unicode_compatible
 class SocialApp(models.Model):
     objects = SocialAppManager()
 
     provider = models.CharField(max_length=30,
                                 choices=providers.registry.as_choices())
     name = models.CharField(max_length=40)
+    client_id = models.CharField(max_length=100,
+                                 help_text='App ID, or consumer key')
     key = models.CharField(max_length=100,
-                           help_text='App ID, or consumer key')
+                           blank=True,
+                           help_text='Key (Stack Exchange only)')
     secret = models.CharField(max_length=100,
-                              help_text='API secret, or consumer secret')
+                              help_text='API secret, client secret, or'
+                              ' consumer secret')
     # Most apps can be used across multiple domains, therefore we use
     # a ManyToManyField. Note that Facebook requires an app per domain
     # (unless the domains share a common base name).
-    sites = models.ManyToManyField(Site)
+    # blank=True allows for disabling apps without removing them
+    sites = models.ManyToManyField(Site, blank=True)
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
@@ -67,8 +81,8 @@ class SocialAccount(models.Model):
     def authenticate(self):
         return authenticate(account=self)
 
-    def __unicode__(self):
-        return unicode(self.user)
+    def __str__(self):
+        return force_text(self.user)
 
     def get_profile_url(self):
         return self.get_provider_account().get_profile_url()
@@ -87,19 +101,23 @@ class SocialAccount(models.Model):
         super(SocialAccount, self).save(*args, **kwargs)
 
 
+@python_2_unicode_compatible
 class SocialToken(models.Model):
     app = models.ForeignKey(SocialApp)
     account = models.ForeignKey(SocialAccount)
-    token = models.TextField(
-        help_text='"oauth_token" (OAuth1) or access token (OAuth2)')
-    token_secret = models.CharField(max_length=200, blank=True,
-                                    help_text='"oauth_token_secret" (OAuth1) or refresh token (OAuth2)')
+    token = models \
+        .TextField(help_text='"oauth_token" (OAuth1) or access token (OAuth2)')
+    token_secret = models \
+        .CharField(max_length=200,
+                   blank=True,
+                   help_text='"oauth_token_secret" (OAuth1) or refresh'
+                   ' token (OAuth2)')
     expires_at = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         unique_together = ('app', 'account')
 
-    def __unicode__(self):
+    def __str__(self):
         return self.token
 
 
@@ -122,20 +140,32 @@ class SocialLogin(object):
 
     `state` (`dict`): The state to be preserved during the
     authentication handshake. Note that this state may end up in the
-    url (e.g. OAuth2 `state` parameter) -- do not put any secrets in
-    there. It currently only contains the url to redirect to after
-    login.
+    url -- do not put any secrets in here. It currently only contains
+    the url to redirect to after login.
+
+    `email_addresses` (list of `EmailAddress`): Optional list of
+    e-mail addresses retrieved from the provider.
     """
 
-    def __init__(self, account, token=None):
+    def __init__(self, account, token=None, email_addresses=[]):
         if token:
             assert token.account is None or token.account == account
             token.account = account
         self.token = token
         self.account = account
+        self.email_addresses = email_addresses
         self.state = {}
 
-    def save(self):
+    def connect(self, request, user):
+        self.account.user = user
+        self.save(request, connect=True)
+
+    def save(self, request, connect=False):
+        """
+        Saves a new account. Note that while the account is new,
+        the user may be an existing one (when connecting accounts)
+        """
+        assert not self.is_existing
         user = self.account.user
         user.save()
         self.account.user = user
@@ -143,6 +173,11 @@ class SocialLogin(object):
         if self.token:
             self.token.account = self.account
             self.token.save()
+        if connect:
+            # TODO: Add any new email addresses automatically?
+            pass
+        else:
+            setup_user_email(request, user, self.email_addresses)
 
     @property
     def is_existing(self):
@@ -170,7 +205,10 @@ class SocialLogin(object):
                     t = SocialToken.objects.get(account=self.account,
                                                 app=self.token.app)
                     t.token = self.token.token
-                    t.token_secret = self.token.token_secret
+                    if self.token.token_secret:
+                        # only update the refresh token if we got one
+                        # many oauth2 providers do not resend the refresh token
+                        t.token_secret = self.token.token_secret
                     t.expires_at = self.token.expires_at
                     t.save()
                     self.token = t
@@ -180,28 +218,38 @@ class SocialLogin(object):
         except SocialAccount.DoesNotExist:
             pass
 
-    def get_redirect_url(self,
-                         fallback=allauth.app_settings.LOGIN_REDIRECT_URL):
-        url = self.state.get('next') or fallback
+    def get_redirect_url(self, request):
+        url = self.state.get('next')
         return url
 
     @classmethod
     def state_from_request(cls, request):
         state = {}
-        next = get_login_redirect_url(request, fallback=None)
-        if next:
-            state['next'] = next
+        next_url = get_next_redirect_url(request)
+        if next_url:
+            state['next'] = next_url
+        state['process'] = request.REQUEST.get('process', 'login')
         return state
 
     @classmethod
-    def marshall_state(cls, request):
+    def stash_state(cls, request):
         state = cls.state_from_request(request)
-        return simplejson.dumps(state)
+        verifier = get_random_string()
+        request.session['socialaccount_state'] = (state, verifier)
+        return verifier
 
     @classmethod
-    def unmarshall_state(cls, state_string):
-        if state_string:
-            state = simplejson.loads(state_string)
-        else:
-            state = {}
+    def unstash_state(cls, request):
+        if 'socialaccount_state' not in request.session:
+            raise PermissionDenied()
+        state, verifier = request.session.pop('socialaccount_state')
+        return state
+
+    @classmethod
+    def verify_and_unstash_state(cls, request, verifier):
+        if 'socialaccount_state' not in request.session:
+            raise PermissionDenied()
+        state, verifier2 = request.session.pop('socialaccount_state')
+        if verifier != verifier2:
+            raise PermissionDenied()
         return state

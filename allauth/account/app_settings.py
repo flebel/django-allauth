@@ -1,108 +1,212 @@
-import warnings
-from django.conf import settings
+class AppSettings(object):
 
-class AuthenticationMethod:
-    USERNAME = 'username'
-    EMAIL = 'email'
-    USERNAME_EMAIL = 'username_email'
+    class AuthenticationMethod:
+        USERNAME = 'username'
+        EMAIL = 'email'
+        USERNAME_EMAIL = 'username_email'
+    
+    class EmailVerificationMethod:
+        # After signing up, keep the user account inactive until the email
+        # address is verified
+        MANDATORY = 'mandatory'
+        # Allow login with unverified e-mail (e-mail verification is still sent)
+        OPTIONAL = 'optional'
+        # Don't send e-mail verification mails during signup
+        NONE = 'none'
 
-class EmailVerificationMethod:
-    # After signing up, keep the user account inactive until the email
-    # address is verified
-    MANDATORY = 'mandatory'
-    # Allow login with unverified e-mail (e-mail verification is still sent)
-    OPTIONAL = 'optional'
-    # Don't send e-mail verification mails during signup
-    NONE = 'none'
+    def __init__(self, prefix):
+        self.prefix = prefix
+        # If login is by email, email must be required
+        assert (not self.AUTHENTICATION_METHOD
+                ==self.AuthenticationMethod.EMAIL) or self.EMAIL_REQUIRED
+        # If login includes email, login must be unique
+        assert (self.AUTHENTICATION_METHOD
+                ==self.AuthenticationMethod.USERNAME) or self.UNIQUE_EMAIL
+        assert (self.EMAIL_VERIFICATION 
+                != self.EmailVerificationMethod.MANDATORY) \
+            or self.EMAIL_REQUIRED
+        if not self.USER_MODEL_USERNAME_FIELD:
+            assert not self.USERNAME_REQUIRED
+            assert self.AUTHENTICATION_METHOD not in (self.AuthenticationMethod.USERNAME,
+                                                      self.AuthenticationMethod.USERNAME_EMAIL)
 
-ADAPTER = getattr(settings, "ACCOUNT_ADAPTER", 
-                  "allauth.account.adapter.DefaultAccountAdapter")
 
-# Determines the expiration date of e-mail confirmation mails (# of days)
-EMAIL_CONFIRMATION_EXPIRE_DAYS \
-    = getattr(settings, "ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS", 
-              getattr(settings, "EMAIL_CONFIRMATION_DAYS", 3))
+    def _setting(self, name, dflt):
+        from django.conf import settings
+        return getattr(settings, self.prefix + name, dflt)
 
-# The URL to redirect to after a successful e-mail confirmation, in case of
-# an authenticated user
-EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL \
-    = getattr(settings, "ACCOUNT_EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL", settings.LOGIN_REDIRECT_URL)
+    @property
+    def EMAIL_CONFIRMATION_EXPIRE_DAYS(self):
+        """
+        Determines the expiration date of e-mail confirmation mails (#
+        of days)
+        """
+        from django.conf import settings
+        return self._setting("EMAIL_CONFIRMATION_EXPIRE_DAYS", 
+                             getattr(settings, "EMAIL_CONFIRMATION_DAYS", 3))
 
-# The URL to redirect to after a successful e-mail confirmation, in case no
-# user is logged in
-EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL \
-    = getattr(settings, "ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL",
-              settings.LOGIN_URL)
+    @property
+    def EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL(self):
+        """
+        The URL to redirect to after a successful e-mail confirmation, in
+        case of an authenticated user
+        """
+        return self._setting("EMAIL_CONFIRMATION_AUTHENTICATED_REDIRECT_URL",
+                             None)
 
-# Determines whether email confirmation is automatic when the link is clicked
-AUTO_EMAIL_CONFIRMATION \
-    = getattr(settings, "ACCOUNT_AUTO_EMAIL_CONFIRMATION", False)
+    @property
+    def EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL(self):
+        """
+        The URL to redirect to after a successful e-mail confirmation, in
+        case no user is logged in
+        """
+        from django.conf import settings
+        return self._setting("EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL",
+                             settings.LOGIN_URL)
 
-# Determines whether anonymous users are logged-in automatically when clicking
-# email confirmation links
-# when clicking an email confirmation link. If not, user is presented with a form.
-LOGIN_ON_EMAIL_CONFIRMATION \
-    = getattr(settings, "ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION", False)
-                                         
-# The user is required to hand over an e-mail address when signing up
-EMAIL_REQUIRED = getattr(settings, "ACCOUNT_EMAIL_REQUIRED", False)
+    @property
+    def AUTO_EMAIL_CONFIRMATION(self):
+        """
+        Determines whether email confirmation is automatic when the link is
+        clicked
+        """
+        return self._setting("ACCOUNT_AUTO_EMAIL_CONFIRMATION", False)
 
-# See e-mail verification method
-EMAIL_VERIFICATION = getattr(settings, "ACCOUNT_EMAIL_VERIFICATION", 
-                             EmailVerificationMethod.OPTIONAL)
-# Deal with legacy (boolean based) setting
-if EMAIL_VERIFICATION == True:
-    EMAIL_VERIFICATION = EmailVerificationMethod.MANDATORY
-elif EMAIL_VERIFICATION == False:
-    EMAIL_VERIFICATION = EmailVerificationMethod.OPTIONAL
+    @property
+    def LOGIN_ON_EMAIL_CONFIRMATION(self):
+        """
+        Determines whether anonymous users are logged-in automatically when
+        clicking email confirmation links when clicking an email confirmation
+        link. If not, user is presented with a form.
+        """
+        return self._setting("ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION", False)
 
-# Login by email address, not username
-if hasattr(settings, "ACCOUNT_EMAIL_AUTHENTICATION"):
-    warnings.warn("ACCOUNT_EMAIL_AUTHENTICATION is deprecated, use ACCOUNT_AUTHENTICATION_METHOD", 
-                  DeprecationWarning)
-    if getattr(settings, "ACCOUNT_EMAIL_AUTHENTICATION"):
-        AUTHENTICATION_METHOD = AuthenticationMethod.EMAIL
-    else:
-        AUTHENTICATION_METHOD = AuthenticationMethod.USERNAME
-else:
-    AUTHENTICATION_METHOD = getattr(settings, "ACCOUNT_AUTHENTICATION_METHOD", 
-                                    AuthenticationMethod.USERNAME)
+    @property
+    def EMAIL_REQUIRED(self):
+        """
+        The user is required to hand over an e-mail address when signing up
+        """
+        return self._setting("EMAIL_REQUIRED", False)
 
-# Enforce uniqueness of e-mail addresses
-UNIQUE_EMAIL = getattr(settings, "ACCOUNT_UNIQUE_EMAIL", True)
+    @property
+    def EMAIL_VERIFICATION(self):
+        """
+        See e-mail verification method
+        """
+        ret = self._setting("EMAIL_VERIFICATION", 
+                            self.EmailVerificationMethod.OPTIONAL)
+        # Deal with legacy (boolean based) setting
+        if ret == True:
+            ret = self.EmailVerificationMethod.MANDATORY
+        elif ret == False:
+            ret = self.EmailVerificationMethod.OPTIONAL
+        return ret
 
-# Signup password verification
-SIGNUP_PASSWORD_VERIFICATION = getattr(settings, 
-                                       "ACCOUNT_SIGNUP_PASSWORD_VERIFICATION", 
-                                       True)
+    @property
+    def AUTHENTICATION_METHOD(self):
+        from django.conf import settings
+        if hasattr(settings, "ACCOUNT_EMAIL_AUTHENTICATION"):
+            import warnings
+            warnings.warn("ACCOUNT_EMAIL_AUTHENTICATION is deprecated,"
+                          " use ACCOUNT_AUTHENTICATION_METHOD", 
+                          DeprecationWarning)
+            if getattr(settings, "ACCOUNT_EMAIL_AUTHENTICATION"):
+                ret = self.AuthenticationMethod.EMAIL
+            else:
+                ret = self.AuthenticationMethod.USERNAME
+        else:
+            ret = self._setting("AUTHENTICATION_METHOD", 
+                                self.AuthenticationMethod.USERNAME)
+        return ret
 
-# Minimum password Length
-PASSWORD_MIN_LENGTH = getattr(settings, "ACCOUNT_PASSWORD_MIN_LENGTH", 6)
+    @property
+    def UNIQUE_EMAIL(self):
+        """
+        Enforce uniqueness of e-mail addresses
+        """
+        return self._setting("UNIQUE_EMAIL", True)
 
-# Subject-line prefix to use for email messages sent
-EMAIL_SUBJECT_PREFIX = getattr(settings, "ACCOUNT_EMAIL_SUBJECT_PREFIX", None)
+    @property
+    def SIGNUP_PASSWORD_VERIFICATION(self):
+        """
+        Signup password verification
+        """
+        return self._setting("SIGNUP_PASSWORD_VERIFICATION", True)
 
-# Signup form
-SIGNUP_FORM_CLASS = getattr(settings, "ACCOUNT_SIGNUP_FORM_CLASS", None)
+    @property
+    def PASSWORD_MIN_LENGTH(self):
+        """
+        Minimum password Length
+        """
+        return self._setting("PASSWORD_MIN_LENGTH", 6)
 
-# The user is required to enter a username when signing up
-USERNAME_REQUIRED = getattr(settings, "ACCOUNT_USERNAME_REQUIRED", True)
+    @property
+    def EMAIL_SUBJECT_PREFIX(self):
+        """
+        Subject-line prefix to use for email messages sent
+        """
+        return self._setting("EMAIL_SUBJECT_PREFIX", None)
 
-# Minimum username Length
-USERNAME_MIN_LENGTH = getattr(settings, "ACCOUNT_USERNAME_MIN_LENGTH", 1)
+    @property
+    def SIGNUP_FORM_CLASS(self):
+        """
+        Signup form
+        """
+        return self._setting("SIGNUP_FORM_CLASS", None)
 
-# render_value parameter as passed to PasswordInput fields
-PASSWORD_INPUT_RENDER_VALUE = getattr(settings, 
-                                      "ACCOUNT_PASSWORD_INPUT_RENDER_VALUE", 
-                                      False)
+    @property
+    def USERNAME_REQUIRED(self):
+        """
+        The user is required to enter a username when signing up
+        """
+        return self._setting("USERNAME_REQUIRED", True)
 
-# If login is by email, email must be required
-assert (not AUTHENTICATION_METHOD==AuthenticationMethod.EMAIL) or EMAIL_REQUIRED
-# If login includes email, login must be unique
-assert (AUTHENTICATION_METHOD==AuthenticationMethod.USERNAME) or UNIQUE_EMAIL
-assert EMAIL_VERIFICATION != EmailVerificationMethod.MANDATORY or EMAIL_REQUIRED
+    @property
+    def USERNAME_MIN_LENGTH(self):
+        """
+        Minimum username Length
+        """
+        return self._setting("USERNAME_MIN_LENGTH", 1)
 
-# Will set is_active to False for new users
-# is_active is only set to true if a valid invitation key is supplied
-INVITATION_REQUIRED = getattr(settings, 'ACCOUNT_INVITATION_REQUIRED', False)
-NO_INVITATION_REDIRECT = getattr(settings, 'ACCOUNT_NO_INVITATION_REDIRECT', False)
+    @property
+    def USERNAME_BLACKLIST(self):
+        """
+        List of usernames that are not allowed
+        """
+        return self._setting("USERNAME_BLACKLIST", [])
+
+    @property
+    def PASSWORD_INPUT_RENDER_VALUE(self):
+        """
+        render_value parameter as passed to PasswordInput fields
+        """
+        return self._setting("PASSWORD_INPUT_RENDER_VALUE", False)
+        
+    @property
+    def ADAPTER(self):
+        return self._setting('ADAPTER', 
+                             'allauth.account.adapter.DefaultAccountAdapter')
+
+    @property
+    def LOGOUT_REDIRECT_URL(self):
+        return self._setting('LOGOUT_REDIRECT_URL', '/')
+    
+    @property
+    def LOGOUT_ON_GET(self):
+        return self._setting('LOGOUT_ON_GET', False)
+
+    @property
+    def USER_MODEL_USERNAME_FIELD(self):
+        return self._setting('USER_MODEL_USERNAME_FIELD', 'username')
+
+    @property
+    def USER_MODEL_EMAIL_FIELD(self):
+        return self._setting('USER_MODEL_EMAIL_FIELD', 'email')
+
+
+# Ugly? Guido recommends this himself ...
+# http://mail.python.org/pipermail/python-ideas/2012-May/014969.html
+import sys
+app_settings = AppSettings('ACCOUNT_')
+app_settings.__name__ = __name__
+sys.modules[__name__] = app_settings

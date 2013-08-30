@@ -1,6 +1,6 @@
-from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 
-import views
+from . import views
 
 urlpatterns = patterns("",
 #    url(r"^email/$", views.email, name="account_email"),
@@ -20,5 +20,5 @@ urlpatterns = patterns("",
     url(r"^password/reset/$", views.password_reset, name="account_reset_password"),
     url(r"^password/reset/done/$", views.password_reset_done, name="account_reset_password_done"),
     url(r"^password/reset/key/(?P<uidb36>[0-9A-Za-z]+)-(?P<key>.+)/$", views.password_reset_from_key, name="account_reset_password_from_key"),
-    
+    url(r"^password/reset/key/done/$", views.password_reset_from_key_done, name="account_reset_password_from_key_done"),
 )

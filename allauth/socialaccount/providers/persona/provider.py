@@ -1,13 +1,14 @@
+import json
+
 from django.template.loader import render_to_string
 from django.template import RequestContext
-from django.utils import simplejson
 
 from allauth.socialaccount import providers
 from allauth.socialaccount.providers.base import ProviderAccount, Provider
 
 
 class PersonaAccount(ProviderAccount):
-    def __unicode__(self):
+    def to_str(self):
         return self.account.uid
 
 class PersonaProvider(Provider):
@@ -19,12 +20,14 @@ class PersonaProvider(Provider):
     def media_js(self, request):
         settings = self.get_settings()
         request_parameters = settings.get('REQUEST_PARAMETERS', {})
-        ctx = { 'request_parameters': simplejson.dumps(request_parameters) }
+        ctx = { 'request_parameters': json.dumps(request_parameters) }
         return render_to_string('persona/auth.html',
                                 ctx,
                                 RequestContext(request))
 
     def get_login_url(self, request, **kwargs):
-        return 'javascript:allauth.persona.login()'
+        next_url = "'%s'" % (kwargs.get('next') or '')
+        process = "'%s'" % (kwargs.get('process') or 'login')
+        return 'javascript:allauth.persona.login(%s, %s)' % (next_url, process)
 
 providers.registry.register(PersonaProvider)
