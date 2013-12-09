@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 def fb_complete_login(app, token):
     resp = requests.get('https://graph.facebook.com/me',
                         params={ 'access_token': token.token })
+    resp.raise_for_status()
     extra_data = resp.json()
     uid = extra_data['id']
     user = get_adapter() \
