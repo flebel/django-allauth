@@ -7,8 +7,7 @@ from allauth.socialaccount.providers.oauth2.views import (OAuth2Adapter,
                                                           OAuth2CallbackView)
 
 from allauth.socialaccount import providers
-from allauth.socialaccount.helpers import complete_social_login
-from allauth.socialaccount.helpers import render_authentication_error
+from allauth.socialaccount.helpers import complete_social_login, render_authentication_error
 from allauth.socialaccount.models import SocialLogin, SocialAccount, SocialToken
 from allauth.socialaccount.adapter import get_adapter
 from allauth.account.utils import user_email
