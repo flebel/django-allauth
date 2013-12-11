@@ -6,7 +6,7 @@ from . import views
 
 urlpatterns = default_urlpatterns(GoogleProvider)
 
-urlpatterns += patterns('',
-    url('^google/login/token/$', views.login_by_token,
-        name="google_login_by_token"),
-    )
+# urlpatterns += patterns('',
+#     url('^google/login/token/$', views.login_by_token,
+#         name="google_login_by_token"),
+#     )
